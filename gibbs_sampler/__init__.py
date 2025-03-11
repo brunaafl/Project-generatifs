@@ -35,11 +35,9 @@ def get_named_beta_schedule(schedule_name="linear", num_diffusion_timesteps=1000
         raise NotImplementedError(f"unknown beta schedule: {schedule_name}")
 
 class GibbsSampler:
-    def __init__(self, Y, sigma, operator, model, model_type, device, sampler=None,
+    def __init__(self, Y, sigma, operator, model, model_type, sampler, device, dsize=(256,256),
                  N_MC=23, N_bi=20, rho=0.1, rho_decay_rate=0.8, plot_process=None):
 
-        if sampler is None and model_type == 'DDMP':
-            ValueError('sampler is required for DDMP model')
 
         self.N_MC = N_MC
         self.N_bi = N_bi
@@ -53,6 +51,7 @@ class GibbsSampler:
         self.model_type = model_type
         self.sampler = sampler
         self.plot_process = plot_process
+        self.dsize = dsize
 
 
         # Get alphas using the beta schedule
@@ -60,12 +59,12 @@ class GibbsSampler:
         self.alphas = np.cumsum(betas) / np.max(np.cumsum(betas))
 
         # Initialize matrices to store iterates
-        self.X_MC = torch.zeros(size=(3, 256, 256, N_MC+1), device=self.device)
-        self.Z_MC = torch.zeros(size=(3, 256, 256, N_MC+1), device=self.device)
+        self.X_MC = torch.zeros(size=(3, *dsize, N_MC+1), device=self.device)
+        self.Z_MC = torch.zeros(size=(3, *dsize, N_MC+1), device=self.device)
 
         # Initialize X_MC and Z_MC with random values
-        self.X_MC[:,:,:,0] = torch.randn((3, 256, 256), device=self.device)
-        self.Z_MC[:,:,:,0] = torch.randn((3, 256, 256), device=self.device)
+        self.X_MC[:,:,:,0] = torch.randn((3, *dsize), device=self.device)
+        self.Z_MC[:,:,:,0] = torch.randn((3, *dsize), device=self.device)
 
     def estimate_time(self, value, array=None):
         if array is None:
@@ -83,32 +82,44 @@ class GibbsSampler:
 
     def run(self):
         for t in tqdm(range(self.N_MC)):
+
             # Likelihood step
             self.X_MC[:,:,:,t+1] = self.operator.proximal_generator(
                 self.Z_MC[:,:,:,t], self.Y, self.sigma, rho=self.rho
             ) # sigma is related to p(y|x)
 
-            # Update rho and time step
-            # Estimating noise level
+            # Estimating noise level at each step
             rho_iter = self.rho * (self.rho_decay_rate ** t)
-            t_start = self.estimate_time(rho_iter)
-            t_stop = self.compute_last_diff_step(t_start, t)
 
             # Prior step
             if self.model_type == 'DDMP':
+                # Update rho and time step
+
+                # Estimating time instant of the forward process
+                t_start = self.estimate_time(rho_iter)
+                t_stop = self.compute_last_diff_step(t_start, t)
+
                 self.Z_MC[:,:,:,t+1] = self.sampler.diffuse_back(
                     x=self.X_MC[:,:,:,t+1].unsqueeze(0),
                     model=self.model,
                     t_start=1000 - t_start,
                     t_end=1000 - t_stop
                 ).squeeze(0)
+
             elif self.model_type == 'DnCNN':
-                self.Z_MC[:,:,:,t+1] = self.model(self.X_MC[:,:,:,t+1].unsqueeze(0))
+
+                # The sampling of the auxiliary is
+                self.Z_MC[:, :, :, t + 1] = self.sampler.sample(
+                    x=self.X_MC[:,:,:,t+1].unsqueeze(0),
+                    operator=self.operator,
+                    model=self.model, ).squeeze(0)
 
             if self.plot_process is not None:
                 if (t % self.plot_process == 0) and (t < self.N_bi):
                     # plot the reconstruction on the step t
                     show_reconstruction(self.Z_MC[:,:,:,t+1], self.X_MC[:,:,:,t+1], t)
 
+        if self.model_type == 'DnCNN':
+            self.sampler.plot_residuals()
 
         return self.X_MC, self.Z_MC
