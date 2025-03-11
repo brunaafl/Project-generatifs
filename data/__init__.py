@@ -36,9 +36,9 @@ def get_dataloader(dataset: VisionDataset,
 
 @register_dataset(name='ffhq')
 class FFHQDataset(VisionDataset):
-    def __init__(self, root: str):
+    def __init__(self, root: str, dsize=(256, 256)):
         super().__init__(root)
-
+        self.dsize = dsize
         self.fpaths = sorted(glob(root + '/*.png', recursive=True))
         self.transforms = transforms.Compose([transforms.ToTensor(),
                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -48,10 +48,10 @@ class FFHQDataset(VisionDataset):
     def __len__(self):
         return len(self.fpaths)
 
-    def __getitem__(self, index: int, dsize=(256, 256)):
+    def __getitem__(self, index: int):
         fpath = self.fpaths[index]
         img = cv2.imread(fpath)
-        img = cv2.resize(img, dsize=dsize, interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(img, dsize=self.dsize, interpolation=cv2.INTER_CUBIC)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         return self.transforms(img)
@@ -59,8 +59,10 @@ class FFHQDataset(VisionDataset):
 
 @register_dataset(name='celeba')
 class CelebADataset(VisionDataset):
-    def __init__(self, root: str):
+    def __init__(self, root: str, dsize=(256, 256)):
         super().__init__(root)
+
+        self.dsize = dsize
 
         self.fpaths = sorted(glob(root + '/*.jpg', recursive=True))
         self.transforms = transforms.Compose([transforms.ToTensor(),
@@ -71,19 +73,20 @@ class CelebADataset(VisionDataset):
     def __len__(self):
         return len(self.fpaths)
 
-    def __getitem__(self, index: int, dsize=(256, 256)):
+    def __getitem__(self, index: int):
         fpath = self.fpaths[index]
         img = cv2.imread(fpath)
-        img = cv2.resize(img, dsize=dsize, interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(img, dsize=self.dsize, interpolation=cv2.INTER_CUBIC)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         return self.transforms(img)
 
 @register_dataset(name='mri')
 class BrainTumorDataset(VisionDataset):
-    def __init__(self, root: str):
+    def __init__(self, root: str, dsize=(256, 256)):
         super().__init__(root)
 
+        self.dsize = dsize
         self.fpaths = sorted(glob(root + '/*.jpg', recursive=True))
         self.transforms = transforms.Compose([transforms.ToTensor(),
                                               transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -93,10 +96,10 @@ class BrainTumorDataset(VisionDataset):
     def __len__(self):
         return len(self.fpaths)
 
-    def __getitem__(self, index: int, dsize=(256, 256)):
+    def __getitem__(self, index: int):
         fpath = self.fpaths[index]
         img = cv2.imread(fpath)
-        img = cv2.resize(img, dsize=dsize, interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(img, dsize=self.dsize, interpolation=cv2.INTER_CUBIC)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         return self.transforms(img)
