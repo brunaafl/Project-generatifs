@@ -58,8 +58,7 @@ def main():
     print("Operator name: {}".format(operator.display_name))
     # Load dataset
     print("Load dataset")
-    get_dataset("ffhq", root="data/samples_ffhq")
-    dataset = get_dataset("ffhq", root="data/samples_ffhq")
+    dataset = get_dataset(**data_config)
     num_test_images = len(dataset)
     dataloader = get_dataloader(dataset, batch_size=1, num_workers=0, train=False)
     for i, img in enumerate(dataloader):
@@ -110,7 +109,7 @@ def main():
         axes[3].set_title('X Reconstructed image')
         axes[3].axis('off');
 
-        plt.savefig(f"results/{i}_test.png", dpi=200, bbox_inches='tight')
+        plt.savefig(f"results/{i}_celeba_test.png", dpi=200, bbox_inches='tight')
 
 if __name__ == '__main__':
     main()
