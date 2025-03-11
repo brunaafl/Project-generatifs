@@ -5,7 +5,7 @@ from tqdm import tqdm
 import numpy as np
 
 from guided_diffusion.gaussian_diffusion import betas_for_alpha_bar
-from util.plot_utils import plot_x_z_reconstruction
+from util.plot_utils import show_reconstruction
 
 
 def get_named_beta_schedule(schedule_name="linear", num_diffusion_timesteps=1000):
@@ -108,7 +108,7 @@ class GibbsSampler:
             if self.plot_process is not None:
                 if (t % self.plot_process == 0) and (t < self.N_bi):
                     # plot the reconstruction on the step t
-                    plot_x_z_reconstruction(self.Z_MC[:,:,:,t+1], self.X_MC[:,:,:,t+1], t)
+                    show_reconstruction(self.Z_MC[:,:,:,t+1], self.X_MC[:,:,:,t+1], t)
 
 
         return self.X_MC, self.Z_MC
