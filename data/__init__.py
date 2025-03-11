@@ -1,10 +1,8 @@
 from glob import glob
 import cv2
-from typing import Callable, Optional
 from torch.utils.data import DataLoader
 from torchvision.datasets import VisionDataset
 import torchvision.transforms as transforms
-import numpy as np
 
 
 __DATASET__ = {}
@@ -50,10 +48,57 @@ class FFHQDataset(VisionDataset):
     def __len__(self):
         return len(self.fpaths)
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int, dsize=(256, 256)):
         fpath = self.fpaths[index]
         img = cv2.imread(fpath)
-        img = cv2.resize(img, dsize=(256, 256), interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(img, dsize=dsize, interpolation=cv2.INTER_CUBIC)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         return self.transforms(img)
+
+
+@register_dataset(name='celeba')
+class CelebADataset(VisionDataset):
+    def __init__(self, root: str):
+        super().__init__(root)
+
+        self.fpaths = sorted(glob(root + '/*.jpg', recursive=True))
+        self.transforms = transforms.Compose([transforms.ToTensor(),
+                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+        assert len(self.fpaths) > 0, "File list is empty. Check the root."
+
+    def __len__(self):
+        return len(self.fpaths)
+
+    def __getitem__(self, index: int, dsize=(256, 256)):
+        fpath = self.fpaths[index]
+        img = cv2.imread(fpath)
+        img = cv2.resize(img, dsize=dsize, interpolation=cv2.INTER_CUBIC)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        return self.transforms(img)
+
+@register_dataset(name='mri')
+class BrainTumorDataset(VisionDataset):
+    def __init__(self, root: str):
+        super().__init__(root)
+
+        self.fpaths = sorted(glob(root + '/*.jpg', recursive=True))
+        self.transforms = transforms.Compose([transforms.ToTensor(),
+                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+        assert len(self.fpaths) > 0, "File list is empty. Check the root."
+
+    def __len__(self):
+        return len(self.fpaths)
+
+    def __getitem__(self, index: int, dsize=(256, 256)):
+        fpath = self.fpaths[index]
+        img = cv2.imread(fpath)
+        img = cv2.resize(img, dsize=dsize, interpolation=cv2.INTER_CUBIC)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        return self.transforms(img)
+
+print(__DATASET__)
