@@ -72,8 +72,12 @@ inv_transform = transforms.Compose([
         transforms.Lambda(lambda x: x.clamp(0, 1).detach())
     ])
 
-def clear_color(X):
-    return inv_transform(X).squeeze().permute(1, 2, 0).cpu().numpy()
+def clear_color(X, normalize=True):
+    if normalize:
+        return inv_transform(X).squeeze().permute(1, 2, 0).cpu().numpy()
+    else:
+        clamp = transforms.Lambda(lambda x: x.clamp(0, 1).detach())
+        return clamp(X).squeeze().permute(1, 2, 0).numpy()
 
 #def clear_color(x):
 #    if torch.is_complex(x):
@@ -102,3 +106,8 @@ def normalize(img, s=0.95):
 def dynamic_thresholding(img, s=0.95):
     img = normalize(img, s=s)
     return torch.clip(img, -1., 1.)
+
+
+def psnr(uref,ut,M=1):
+    rmse = np.sqrt(np.mean((np.array(uref)-np.array(ut))**2))
+    return 20*np.log10(M/rmse)
